@@ -1,0 +1,33 @@
+import { useEffect, useState } from 'react'
+
+type Theme = 'light' | 'dark' | 'system'
+const STORAGE_KEY = 'portfolio-os-theme'
+
+function applyTheme(theme: Theme) {
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.classList.toggle('dark', isDark)
+}
+
+export function useTheme() {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
+    return stored ?? 'system'
+  })
+
+  useEffect(() => {
+    applyTheme(theme)
+    if (theme !== 'system') return
+    // Se estiver em "sistema", acompanha mudanças de preferência do SO em tempo real.
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const listener = () => applyTheme('system')
+    mq.addEventListener('change', listener)
+    return () => mq.removeEventListener('change', listener)
+  }, [theme])
+
+  function setTheme(next: Theme) {
+    localStorage.setItem(STORAGE_KEY, next)
+    setThemeState(next)
+  }
+
+  return { theme, setTheme }
+}
